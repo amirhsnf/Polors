@@ -7,7 +7,7 @@ A simple PHP class to generate primary, secondary, and complementary colors base
 - Modular and extensible code
 
 ## Example Usage
-<?php
+```php
 require 'src/polors.php';
 
 $polor = new polors();
