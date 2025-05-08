@@ -1,150 +1,191 @@
 <?php class polors
 {
+    private array | null $light = null;
+    private array $light_sr = [0, 15];
+    private array $light_vr = [85, 100];
+    private array | null $tertiary = null;
+    private array | null $primary = null;
+    private array | null $secondary = null;
+    private array $main_sr = [10, 50];
+    private array $main_vr = [30, 70];
+    private array | null $dark = null;
+    private array $dark_sr = [0, 100];
+    private array $dark_vr = [0, 25];
+    private array | null $success = null;
+    private array $success_hr = [65, 150];
+    private array $success_sr = [40, 100];
+    private array $success_vr = [30, 100];
+    private array | null $warning = null;
+    private array $warning_hr = [20, 55];
+    private array $warning_sr = [60, 100];
+    private array $warning_vr = [85, 100];
+    private array | null $danger = null;
+    private array $danger_hr = [0, 10];
+    private array $danger_sr = [75, 100];
+    private array $danger_vr = [70, 100];
     public function generate_colors($colors)
     {
         if(count($colors) != 8) return false;
-        list($light, $tertiary, $primary, $secondary, $dark, $success, $warning, $danger) = $colors;
-        if(!$primary){
-            if($secondary){
-                $generate = $this->get_complementary($this->hex_to_hsv($secondary));
-                $primary = $this->hsv_to_hex($generate[0]);
-                if(!$tertiary)
-                    $tertiary = $this->hsv_to_hex($generate[1]);
-            }
-            elseif($tertiary){
-                $generate = $this->get_complementary($this->hex_to_hsv($tertiary));
-                $primary = $this->hsv_to_hex($generate[0]);
-                $secondary = $this->hsv_to_hex($generate[1]);
-            }
-            elseif($light){
-                $primary = $this->hsv_to_hex($this->get_primary_from_dark_or_light($this->hex_to_hsv($light)));
-                $generate = $this->get_complementary($this->hex_to_hsv($primary));
-                $secondary = $this->hsv_to_hex($generate[0]);
-                $tertiary = $this->hsv_to_hex($generate[1]);
-            }
-            elseif($dark){
-                $primary = $this->hsv_to_hex($this->get_primary_from_dark_or_light($this->hex_to_hsv($dark)));
-                $generate = $this->get_complementary($this->hex_to_hsv($primary));
-                $secondary = $this->hsv_to_hex($generate[0]);
-                $tertiary = $this->hsv_to_hex($generate[1]);
-            }
-            else{
-                $primary = $this->hsv_to_hex($this->get_random_primary());
-                $generate = $this->get_complementary($this->hex_to_hsv($primary));
-                $secondary = $this->hsv_to_hex($generate[0]);
-                $tertiary = $this->hsv_to_hex($generate[1]);
-            }
-        }
-        if(!$secondary){
-            $generate = $this->get_complementary($this->hex_to_hsv($primary));
-            $secondary = $this->hsv_to_hex($generate[0]);
-            if(!$tertiary)
-                $tertiary = $this->hsv_to_hex($generate[1]);
-        }
-        if(!$tertiary){
-            $generate = $this->get_complementary($this->hex_to_hsv($primary));
-            $tertiary = $this->hsv_to_hex($generate[0]);
-        }
-        if(!$light){
-            $light = $this->hsv_to_hex($this->get_light_from_primary($this->hex_to_hsv($primary)));
-        }
-        if(!$dark){
-            $dark = $this->hsv_to_hex($this->get_dark_from_primary($this->hex_to_hsv($primary)));
-        }
-        if(!$success){
-            $success = $this->hsv_to_hex([rand(75, 150), rand(25, 100), rand(30, 85)]);
-        }
-        if(!$warning){
-            $warning = $this->hsv_to_hex([rand(25, 55), rand(50, 100), rand(80, 100)]);
-        }
-        if(!$danger){
-            $danger = $this->hsv_to_hex([rand(0, 10), rand(70, 100), rand(65, 100)]);
-        }
-        return [$light, $tertiary, $primary, $secondary, $dark, $success, $warning, $danger];
+        $this->init($colors);
+        $this->handle_primary();
+        $this->handle_secondary();
+        $this->handle_tertiary();
+        $this->handle_light();
+        $this->handle_dark();
+        $this->handle_notice('success');
+        $this->handle_notice('warning');
+        $this->handle_notice('danger');
+        return [
+            $this->hsv_to_hex($this->light),
+            $this->hsv_to_hex($this->tertiary),
+            $this->hsv_to_hex($this->primary),
+            $this->hsv_to_hex($this->secondary),
+            $this->hsv_to_hex($this->dark),
+            $this->hsv_to_hex($this->success),
+            $this->hsv_to_hex($this->warning),
+            $this->hsv_to_hex($this->danger)
+        ];
     }
-    public function get_dark_from_primary($hsv)
-    {
-        $h = abs($hsv[0] + rand(-10, 10)) % 360;
-        $s = rand(0, 50);
-        $lighter = rand(1, 10) == 10;
-        $v = $lighter ? rand(0, 40) : rand(0, 25);
-        return [$h, $s, $v];
+    private function init($colors){
+        if($colors[0]) $this->light = $this->hex_to_hsv($colors[0]);
+        if($colors[1]) $this->tertiary = $this->hex_to_hsv($colors[1]);
+        if($colors[2]) $this->primary = $this->hex_to_hsv($colors[2]);
+        if($colors[3]) $this->secondary = $this->hex_to_hsv($colors[3]);
+        if($colors[4]) $this->dark = $this->hex_to_hsv($colors[4]);
+        if($colors[5]) $this->success = $this->hex_to_hsv($colors[5]);
+        if($colors[6]) $this->warning = $this->hex_to_hsv($colors[6]);
+        if($colors[7]) $this->danger = $this->hex_to_hsv($colors[7]);
     }
-    public function get_light_from_primary($hsv)
+    private function handle_primary(): void
     {
-        $h = abs($hsv[0] + rand(-10, 10)) % 360;
-        $darker = rand(1, 10) == 10;
-        $s = $darker ? rand(0, 25) : rand(0, 10);
-        $v = $darker ? rand(75, 100) : rand(90, 100);
-        return [$h, $s, $v];
+        if($this->primary)
+            return;
+        if($this->secondary){
+            $generate = $this->get_complementary($this->secondary);
+            $this->primary = $generate[0];
+            if(!$this->tertiary)
+                $this->tertiary = $generate[1];
+            return;
+        }
+        if($this->tertiary){
+            $generate = $this->get_complementary($this->tertiary);
+            $this->primary = $generate[0];
+            $this->secondary = $generate[1];
+            return;
+        }
+        if($this->light){
+            $generate = $this->get_complementary($this->light, $this->main_sr, $this->main_vr, true);
+            $this->primary = $generate[0];
+            return;
+        }
+        if($this->dark){
+            $generate = $this->get_complementary($this->dark, $this->main_sr, $this->main_vr, true);
+            $this->primary = $generate[0];
+            return;
+        }
+        $generate = $this->get_complementary(null, $this->main_sr, $this->main_vr, true);
+        $this->primary = $generate[0];
     }
-    public function get_random_primary()
+    private function handle_secondary(): void
     {
-        $h = rand(0, 359);
-        $s = rand(10, 40);
-        $v = rand(40, 70);
-        return [$h, $s, $v];
+        if($this->secondary)
+            return;
+        $generate = $this->get_complementary($this->primary);
+        $this->secondary = $generate[0];
+        if(!$this->tertiary)
+            $this->tertiary = $generate[1];
+
     }
-    public function get_primary_from_dark_or_light($hsv)
+    private function handle_tertiary(): void
     {
-        $h = $hsv[0];
-        $s = rand(10, 40);
-        $v = rand(40, 70);
-        return [abs($h + rand(-10, 10)) % 360, $s, $v];
+        if($this->tertiary)
+            return;
+        $generate = $this->get_complementary($this->primary);
+        $this->tertiary = $generate[0];
     }
-    public function get_complementary($hsv)
+    private function handle_light(): void
     {
-//        $methods = [[0, 180], [150, 210], [120, 240], [30, 330], [10, 350]];
-        $methods = [[30, 180], [180, 330], [30,330], [105, 210], [30, 90], [90, 330], [30, 120]];
-        $method = $methods[rand(0, count($methods) - 1)];
-        $method = $methods[6];
-        shuffle($method);
+        if($this->light)
+            return;
+        $generate = $this->get_complementary($this->primary, $this->light_sr, $this->light_vr, true);
+        $this->light = $generate[0];
+    }
+    private function handle_dark(): void
+    {
+        if($this->dark)
+            return;
+        $generate = $this->get_complementary($this->primary, $this->dark_sr, $this->dark_vr, true);
+        $this->dark = $generate[0];
+    }
+    private function handle_notice($notice): void
+    {
+        if($this->$notice)
+            return;
+        list($ph, $ps, $pv) = $this->primary;
+        $notice_sr = $notice.'_sr';
+        $ns = $this->normalize_sv($ps, $this->$notice_sr);
+        $notice_vr = $notice.'_vr';
+        $nv = $this->normalize_sv($pv, $this->$notice_vr);
+        $notice_hr = $notice.'_hr';
+        $notice_hr = $this->$notice_hr;
+        $this->$notice = [
+            rand($notice_hr[0], $notice_hr[1]),
+            $this->shake_sv($ns),
+            $this->shake_sv($nv),
+        ];
+    }
+    private function normalize_sv($p, $t){
+        if($p >= $t[0] && $p <= $t[1])
+            return $p;
+        if($p < $t[0]){
+            return $t[0];
+        }
+        return $t[1];
+    }
+    private function get_complementary($hsv = null, $sr = null, $vr = null, $same_h = false)
+    {
+        if(!$hsv){
+            $hsv = [rand(0, 359), rand(0,100), rand(0,100)];
+        }
         list($h, $s, $v) = $hsv;
-        $sr = $this->get_sv_ranges($s);
-        $vr = $this->get_sv_ranges($v);
+        $methods = [[30, 330], [60, 300], [150, 210], [30, 180], [180, 330], [30, 210], [150, 330]];
+        $method = $methods[rand(0, count($methods) - 1)];
+//        $method = $methods[6];
+        shuffle($method);
+        if($sr)
+            $s = rand($sr[0], $sr[1]);
+        if($vr)
+            $v = rand($vr[0], $vr[1]);
+        if($same_h)
+            $method = [0, 0];
         return [
             [
-                $this->change_hue($h, $method[0], true),
-                $this->change_sv($s, $sr[0], true),
-                $this->change_sv($v, $vr[0], true)
+                $this->change_hue($h, $method[0]),
+                $this->shake_sv($s),
+                $this->shake_sv($v)
             ],
             [
-                $this->change_hue($h, $method[1], true),
-                $this->change_sv($s, $sr[1], true),
-                $this->change_sv($v, $vr[1], true)
+                $this->change_hue($h, $method[1]),
+                $this->shake_sv($s),
+                $this->shake_sv($v)
             ]
         ];
     }
-    public function change_hue($h, $value, $shake = false): int
+    private function shake_sv($sv)
+    {
+        $sv += rand(-5, 5);
+        if($sv > 100) $sv = 100;
+        if($sv < 0) $sv = 0;
+        return $sv;
+    }
+    public function change_hue($h, $value): int
     {
         $h += $value;
-        if($shake)
-            $h += rand(-5, 5);
+        $h += rand(-5, 5);
         $h = $h % 360;
         if($h < 0)
             $h = 360 - $h;
         return $h;
-    }
-    public function change_sv($sv, $range = null, $shake = false): int
-    {
-        if($range)
-            $sv = rand($range[0], $range[1]);
-        if($shake)
-            $sv += rand(-5, 5);
-        if($sv < 0) $s = 0;
-        if($sv > 100) $s = 100;
-        return $sv;
-    }
-    public function get_sv_ranges($sv): array | false
-    {
-        $level = floor($sv / 10);
-        if($level == 10) $level--;
-        $range_1 = $level == 0 ? 2 : $level - 1;
-        $range_2 = $level == 9 ? 7 : $level + 1;
-        return [
-            [$range_1 * 10, ($range_1 * 10) + 9],
-            [$range_2 * 10, ($range_2 * 10) + 9],
-        ];
     }
     public function hex_to_hsv($hex): array
     {
