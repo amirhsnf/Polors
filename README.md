@@ -1,3 +1,5 @@
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Polors-green?style=for-the-badge)](https://polors.pyno.ir)
+
 # Polors – PHP Color Generator
 A simple PHP class to generate primary, secondary, and complementary colors based on given inputs. Useful for theming, UI design, and CMS integrations.
 
